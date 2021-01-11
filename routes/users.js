@@ -10,7 +10,7 @@ var passport = require('passport');
 var config = require('../config.js');
 const sgMail = require('@sendgrid/mail');
 const { secretKey } = require('../config.js');
-sgMail.setApiKey(config[sendmail-APIKey]);
+sgMail.setApiKey(config[sendmailAPIKey]);
 // test loading database
 router.post('/', (req, res, next) => {
     userModel.all().then(rows => {
