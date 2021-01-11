@@ -1,4 +1,4 @@
-/* created by nghiatq on 12-10-2019 */
+
 
 var express = require('express');
 var userModel = require('../models/users.model');
@@ -9,8 +9,7 @@ var router = express.Router();
 var passport = require('passport');
 var config = require('../config.js');
 const sgMail = require('@sendgrid/mail');
-const { secretKey } = require('../config.js');
-sgMail.setApiKey(config[sendmailAPIKey]);
+sgMail.setApiKey("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");
 // test loading database
 router.post('/', (req, res, next) => {
     userModel.all().then(rows => {
@@ -77,7 +76,7 @@ router.post('/register', (req, res, next) => {
                 email,
                 fullname,
               },
-              config[secretKey],
+              'chouser_hung_jwt_secretkey',
               {
                 expiresIn: "15m",
               }
@@ -88,7 +87,7 @@ router.post('/register', (req, res, next) => {
               subject: "Kích hoạt tài khoản",
               html: `
                                   <h1>Xin chào ${fullname}. Vui lòng click vào link ở bên dưới để kích hoạt tài khoản:</h1>
-                                  <p>${config[client-domain]}/activate/${token}</p>
+                                  <p>https://caro-1612234.herokuapp.com/activate/${token}</p>
                                   <hr />
                                   <p>Vui lòng kích hoạt tài khoản sau 15p tính từ lúc nhận được email này. Nếu không kích hoạt tài khoản trong lúc đó thì tài khoản của bạn sẽ bị xóa.</p>
                                   <p>Liên hệ chúng tôi:</p>
@@ -119,7 +118,7 @@ router.post('/register', (req, res, next) => {
 router.post('/activate', (req, res, next) =>{
     const { token } = req.body;
     if (token) {
-      jwt.verify(token, config[secretKey], (err, decoded) => {
+      jwt.verify(token, 'chouser_hung_jwt_secretkey', (err, decoded) => {
         if (err) {
           console.log("Activation error");
           return res.status(401).json({
@@ -180,7 +179,7 @@ router.post('/password/forget',  (req, res, next) =>{
             email: rows[0].email,
             fullname: rows[0].fullname
           },
-          config[secretKey],
+          'chouser_hung_jwt_secretkey',
           {
             expiresIn: '30m'
           }
@@ -191,7 +190,7 @@ router.post('/password/forget',  (req, res, next) =>{
           subject: `Đặt lại mật khẩu`,
           html: `
                     <h1>Xin chào ${rows[0].fullname}. Để đặt lại mật khẩu cho tài khoản của mình, vui lòng click vào link bên dưới và tiến hành đổi mật khẩu mới</h1>
-                    <p>${config[client-domain]}/password/reset/${token}</p>
+                    <p>https://caro-1612234.herokuapp.com/password/reset/${token}</p>
                     <hr />
                     <p>Liên kết sẽ có hết hạn sau 30 phút tính từ lúc nhận email.  Vui lòng đổi mật khẩu trước khi liên kết hết hạn.</p>
                     <br/>
@@ -228,7 +227,7 @@ router.post('/password/reset', (req, res, next) =>{
   const newPassword =  req.body.newPassword;
   console.log(token);
   if (token) {
-    jwt.verify(token, config[secretKey], (err, decoded) => {
+    jwt.verify(token, 'chouser_hung_jwt_secretkey', (err, decoded) => {
       if (err) {
         console.log("Reset password error");
         return res.status(401).json({
@@ -298,7 +297,7 @@ router.post('/login', (req, res, next) => {
             }
 
             // generate a signed son web token with the contents of user object and return it in the response
-            const token = jwt.sign(JSON.stringify(user), config[secretKey]);
+            const token = jwt.sign(JSON.stringify(user), 'chouser_hung_jwt_secretkey');
             return res.json({
                 user,
                 token
@@ -314,7 +313,7 @@ router.get('/login/facebook/callback', passport.authenticate('facebook', {
     session: false,
     failureRedirect: config['client-domain'] + 'login/',
 }), (req, res) => {
-    const token = jwt.sign(JSON.stringify(req.user), config[secretKey]);
+    const token = jwt.sign(JSON.stringify(req.user), 'chouser_hung_jwt_secretkey');
     res.redirect(config['client-domain'] + 'login?token=' + token + '#chouser');
 });
 
@@ -325,7 +324,7 @@ router.get('/login/google/callback', passport.authenticate('google', {
     session: false,
     failureRedirect: config['client-domain'] + 'login/',
 }), (req, res) => {
-    const token = jwt.sign(JSON.stringify(req.user), config[secretKey]);
+    const token = jwt.sign(JSON.stringify(req.user), 'chouser_hung_jwt_secretkey');
     res.redirect(config['client-domain'] + 'login?token=' + token + '#chouser');
 });
 
