@@ -29,7 +29,7 @@ var exports_3 = {
     'client-domain': 'https://caro-1612234.herokuapp.com/',
     'server-domain': 'https://caro-1612234-server.herokuapp.com/',
     'secretKey': 'chouser_hung_jwt_secretkey',
-    'sendmail-APIKey': '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',
+    'sendmailAPIKey': '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',
     'database': {
         'host': 'td5l74lo6615qq42.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
         'port': '3306',
