@@ -51,7 +51,6 @@ module.exports = function (io, socket) {
   
       // find an empty room
       for (var i = 0; i < listRooms.length; i++) {
-  
         // it's empty when there is no second player
         if (listRooms[i].playerO == null) {
   
@@ -71,7 +70,7 @@ module.exports = function (io, socket) {
           return;
         }
       }
-  
+      
       // create new room if there is no empty one
       var room = {
         id: data.username + Date.now(),
@@ -90,6 +89,7 @@ module.exports = function (io, socket) {
   
       // add this client to the room
       socket.room = room.id;
+      socket.withBot = false;
       socket.join(socket.room);
   
       console.log('Room [' + socket.room + '] created');
@@ -127,7 +127,7 @@ module.exports = function (io, socket) {
         row: randX,
         col: randY
       });
-  
+      
       console.log('Room [' + socket.room + '] with AI created');
     });
   
@@ -199,7 +199,7 @@ module.exports = function (io, socket) {
         socket.to(socket.room).emit('surrender-request', '');
       }
     });
-  
+    
     socket.on('surrender-result', function (data) {
       socket.to(socket.room).emit('surrender-result', data);
     });
@@ -275,14 +275,31 @@ module.exports = function (io, socket) {
     socket.on('play-again-result', function (data) {
       socket.to(socket.room).emit('play-again-result', data);
     });
+
+    socket.on('cancel-find-rival', function(){
+  
+      // leave current room
+      socket.leave(socket.room);
+      for (var i = 0; i < listRooms.length; i++) {
+        if (listRooms[i].id == socket.room) {
+          listRooms.splice(i, 1);
+          console.log("Room [" + socket.room + "] destroyed");
+          break;
+        }
+      }
+    })
+    socket.on('out-room', function(data){
+      socket.leave(socket.room);
+      socket.to(socket.room).emit('out-room', data);
+
+    })
   
     socket.on('disconnect', function () {
   
       socket.removeAllListeners();
-  
       // leave current room
       socket.leave(socket.room);
-  
+      
       // make the room empty or destroy it
       for (var i = 0; i < listRooms.length; i++) {
         if (listRooms[i].id == socket.room) {
