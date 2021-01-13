@@ -1,5 +1,4 @@
 
-
 var express = require('express');
 var userModel = require('../models/users.model');
 var passport = require('passport');
@@ -9,17 +8,19 @@ var router = express.Router();
 var passport = require('passport');
 var config = require('../config.js');
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey("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");
+sgMail.setApiKey(config['mail-key'])
 // test loading database
 router.post('/', (req, res, next) => {
     userModel.all().then(rows => {
         res.status(200).json({
-            message: 'Connect database successful'
-        });
+            message: 'Connect database successful',
+            success: true
+          });
     }).catch(err => {
         res.status(400).json({
-            message: 'Connect database fail'
-        });
+            message: 'Connect database fail',
+            success: false
+          });
     });
 });
 
@@ -34,8 +35,9 @@ router.post('/register', (req, res, next) => {
     // check params
     if (!username || !password || !email || !fullname) {
         res.status(400).json({
-            message: 'Vui lòng nhập đầy đủ thông tin'
-        });
+            message: 'Vui lòng nhập đầy đủ thông tin',
+            success: false
+          });
     }
     else {
         // hash password
@@ -53,6 +55,7 @@ router.post('/register', (req, res, next) => {
           if (rows.length !== 0) {
             return res.status(400).json({
               message: "Tên đăng nhập đã tồn tại",
+              success: false
             });
           } 
           userModel
@@ -61,12 +64,14 @@ router.post('/register', (req, res, next) => {
               if (rows.length !== 0) {
                 return res.status(400).json({
                   message: "Email đã tồn tại",
-                });
+                  success: false
+              });
               }
             })
             .catch((err) => {
               return res.status(400).json({
                 message: "Đã xảy ra lỗi, vui lòng thử lại",
+                success: false
               });
             });
             const token = jwt.sign(
@@ -76,7 +81,7 @@ router.post('/register', (req, res, next) => {
                 email,
                 fullname,
               },
-              'chouser_hung_jwt_secretkey',
+              config['secret-key'],
               {
                 expiresIn: "15m",
               }
@@ -87,7 +92,7 @@ router.post('/register', (req, res, next) => {
               subject: "Kích hoạt tài khoản",
               html: `
                                   <h1>Xin chào ${fullname}. Vui lòng click vào link ở bên dưới để kích hoạt tài khoản:</h1>
-                                  <p>https://caro-1612234.herokuapp.com/activate/${token}</p>
+                                  <p>${config['client-domain']}/activate/${token}</p>
                                   <hr />
                                   <p>Vui lòng kích hoạt tài khoản sau 15p tính từ lúc nhận được email này. Nếu không kích hoạt tài khoản trong lúc đó thì tài khoản của bạn sẽ bị xóa.</p>
                                   <p>Liên hệ chúng tôi:</p>
@@ -99,17 +104,20 @@ router.post('/register', (req, res, next) => {
               .then((sent) => {
                 return res.status(200).json({
                   message: `Thư kích hoạt đã được gửi tới địa chỉ ${email}`,
-                });
+                  success: true
+              });
               })
               .catch((err) => {
                 return res.status(400).json({
                   message: "Đã xảy ra lỗi khi gửi thư kích hoạt, vui lòng thử lại",
-                });
+                  success: false
+              });
               }); 
         }).catch(err => {
             return res.status(400).json({
-                message: 'Đã xảy ra lỗi, vui lòng thử lại'
-            });
+                message: 'Đã xảy ra lỗi, vui lòng thử lại',
+                success: false
+              });
         })
        
     }
@@ -118,11 +126,12 @@ router.post('/register', (req, res, next) => {
 router.post('/activate', (req, res, next) =>{
     const { token } = req.body;
     if (token) {
-      jwt.verify(token, 'chouser_hung_jwt_secretkey', (err, decoded) => {
+      jwt.verify(token, config['secret-key'], (err, decoded) => {
         if (err) {
           console.log("Activation error");
           return res.status(401).json({
             message: "Link kích hoạt đã hết hạn. Vui lòng đăng ký lại.",
+            success: false
           });
         } else {
           const { username, hash, email, fullname } = jwt.decode(token);
@@ -140,6 +149,7 @@ router.post('/activate', (req, res, next) =>{
             .then((id) => {
               res.status(200).json({
                 message: "Kích hoạt tài khoản thành công",
+                success: true
               });
             })
             .catch((err) => {
@@ -153,6 +163,7 @@ router.post('/activate', (req, res, next) =>{
 
               res.status(400).json({
                 message: errMessage,
+                success: false
               });
             });
         }
@@ -160,6 +171,7 @@ router.post('/activate', (req, res, next) =>{
     } else {
       return res.json({
         message: "error happening please try again",
+        success: false
       });
     }
 })
@@ -171,6 +183,7 @@ router.post('/password/forget',  (req, res, next) =>{
       if (rows.length === 0) {
         return res.status(400).json({
           message: "Không tồn tại tài khoản với email bạn nhập",
+          success: false
         });
       }else{
         const token = jwt.sign(
@@ -179,7 +192,7 @@ router.post('/password/forget',  (req, res, next) =>{
             email: rows[0].email,
             fullname: rows[0].fullname
           },
-          'chouser_hung_jwt_secretkey',
+          config['secret-key'],
           {
             expiresIn: '30m'
           }
@@ -190,9 +203,9 @@ router.post('/password/forget',  (req, res, next) =>{
           subject: `Đặt lại mật khẩu`,
           html: `
                     <h1>Xin chào ${rows[0].fullname}. Để đặt lại mật khẩu cho tài khoản của mình, vui lòng click vào link bên dưới và tiến hành đổi mật khẩu mới</h1>
-                    <p>https://caro-1612234.herokuapp.com/password/reset/${token}</p>
+                    <p>${config['client-domain']}/password/reset/${token}</p>
                     <hr />
-                    <p>Liên kết sẽ có hết hạn sau 30 phút tính từ lúc nhận email.  Vui lòng đổi mật khẩu trước khi liên kết hết hạn.</p>
+                    <p>Liên kết sẽ hết hạn sau 30 phút tính từ lúc nhận email.  Vui lòng đổi mật khẩu trước khi liên kết hết hạn.</p>
                     <br/>
                     <p>Liên hệ chúng tôi:</p>
                     <p>"chipchipdaam@gmail.com"</p>
@@ -203,13 +216,15 @@ router.post('/password/forget',  (req, res, next) =>{
           .then((sent) => {
             // console.log('SIGNUP EMAIL SENT', sent)
             return res.status(200).json({
-               message: `Email đặt lại mật khẩu đã được gửi tới ${email}. Làm theo hướng dẫn để đặt lại mật khẩu cho tài khoản của bạn`,
+               message: `Email đặt lại mật khẩu đã được gửi tới ${email}. `,
+               success: true
             });
           })
           .catch((err) => {
             // console.log('SIGNUP EMAIL SENT ERROR', err)
             return res.status(400).json({
               message: "Đã xảy ra lỗi, vui lòng thử lại",
+              success: false
             });
           });
       }
@@ -217,6 +232,7 @@ router.post('/password/forget',  (req, res, next) =>{
     .catch((err) => {
       return res.status(400).json({
         message: "Đã xảy ra lỗi, vui lòng thử lại",
+        success: false
       });
     });
     
@@ -225,13 +241,13 @@ router.post('/password/forget',  (req, res, next) =>{
 router.post('/password/reset', (req, res, next) =>{
   const token = req.body.token;
   const newPassword =  req.body.newPassword;
-  console.log(token);
   if (token) {
-    jwt.verify(token, 'chouser_hung_jwt_secretkey', (err, decoded) => {
+    jwt.verify(token, config['secret-key'], (err, decoded) => {
       if (err) {
         console.log("Reset password error");
         return res.status(401).json({
           message: "Link đặt lại mật khẩu đã hết hạn.",
+          success: false
         });
       } else {
         const { username, email, fullname } = jwt.decode(token);
@@ -239,7 +255,8 @@ router.post('/password/reset', (req, res, next) =>{
         userModel.get(username).then(rows => {
           if (rows.length === 0) {
               return res.status(400).json({
-                  message: 'Tài khoản không tồn tại'
+                  message: 'Tài khoản không tồn tại',
+                  success: false
               });
           }
           var entity = {
@@ -255,24 +272,28 @@ router.post('/password/reset', (req, res, next) =>{
           // write to database
           userModel.put(entity).then(id => {
               return res.status(200).json({
-                  message: 'Thay đổi mật khẩu thành công. Giờ bạn có thể đăng nhập với mật khẩu vừa đổi'
+                  message: 'Thay đổi mật khẩu thành công. Giờ bạn có thể đăng nhập với mật khẩu vừa đổi',
+                  success: true
               });
           }).catch(err => {
               return res.status(400).json({
-                  message: 'Đã xảy ra lỗi, vui lòng thử lại'
+                  message: 'Đã xảy ra lỗi, vui lòng thử lại',
+                  success: false
               });
           })
           
       }).catch(err => {
           return res.status(400).json({
-              message: 'Đã xảy ra lỗi, vui lòng thử lại '
-          });
+              message: 'Đã xảy ra lỗi, vui lòng thử lại ',
+              success: false
+            });
       })
       }
     });
   } else {
     return res.json({
       message: "error happening please try again",
+      success: false
     });
   }
  
@@ -297,7 +318,7 @@ router.post('/login', (req, res, next) => {
             }
 
             // generate a signed son web token with the contents of user object and return it in the response
-            const token = jwt.sign(JSON.stringify(user), 'chouser_hung_jwt_secretkey');
+            const token = jwt.sign(JSON.stringify(user), config['secret-key']);
             return res.json({
                 user,
                 token
@@ -313,7 +334,7 @@ router.get('/login/facebook/callback', passport.authenticate('facebook', {
     session: false,
     failureRedirect: config['client-domain'] + 'login/',
 }), (req, res) => {
-    const token = jwt.sign(JSON.stringify(req.user), 'chouser_hung_jwt_secretkey');
+    const token = jwt.sign(JSON.stringify(req.user), config['secret-key']);
     res.redirect(config['client-domain'] + 'login?token=' + token + '#chouser');
 });
 
@@ -324,7 +345,7 @@ router.get('/login/google/callback', passport.authenticate('google', {
     session: false,
     failureRedirect: config['client-domain'] + 'login/',
 }), (req, res) => {
-    const token = jwt.sign(JSON.stringify(req.user), 'chouser_hung_jwt_secretkey');
+    const token = jwt.sign(JSON.stringify(req.user), config['secret-key']);
     res.redirect(config['client-domain'] + 'login?token=' + token + '#chouser');
 });
 
@@ -340,15 +361,17 @@ router.post('/changeinfo', passport.authenticate('jwt', {session: false}), (req,
     // check params
     if (!username || !email || !fullname) {
         res.status(400).json({
-            message: 'Vui lòng nhập đầy đủ thông tin'
-        });
+            message: 'Vui lòng nhập đầy đủ thông tin',
+            success: false
+          });
     }
     else {
         userModel.get(username).then(rows => {
             if (rows.length === 0) {
                 return res.status(400).json({
-                    message: 'Tài khoản không tồn tại'
-                });
+                    message: 'Tài khoản không tồn tại',
+                    success: false
+                  });
             }
             var user = rows[0];
 
@@ -366,8 +389,9 @@ router.post('/changeinfo', passport.authenticate('jwt', {session: false}), (req,
                 var ret = bcrypt.compareSync(oldPassword, user.password);
                 if (!ret) {
                     return res.status(400).json({
-                        message: 'Mật khẩu cũ không chính xác'
-                    });
+                        message: 'Mật khẩu cũ không chính xác',
+                        success: false
+                });
                 }
                 else {
                     var saltRounds = 10;
@@ -379,18 +403,21 @@ router.post('/changeinfo', passport.authenticate('jwt', {session: false}), (req,
             // write to database
             userModel.put(entity).then(id => {
                 return res.status(200).json({
-                    message: 'Cập nhật thông tin thành công'
-                });
+                    message: 'Cập nhật thông tin thành công',
+                    success: true
+                  });
             }).catch(err => {
                 return res.status(400).json({
-                    message: 'Đã xảy ra lỗi, vui lòng thử lại'
-                });
+                    message: 'Đã xảy ra lỗi, vui lòng thử lại',
+                    success: false
+                  });
             })
             
         }).catch(err => {
             return res.status(400).json({
-                message: 'Đã xảy ra lỗi, vui lòng thử lại'
-            });
+                message: 'Đã xảy ra lỗi, vui lòng thử lại',
+                success: false
+              });
         })
     }
 });

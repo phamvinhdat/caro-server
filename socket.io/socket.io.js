@@ -135,6 +135,7 @@ module.exports = function (io, socket) {
     socket.on('move', function (data) {
   
       if (socket.withBot) {
+        console.log("bot move");
   
         // Save to logic server and get bot move
         const botMove = socket.logic.makePlayerMove(data.row, data.col);
@@ -291,7 +292,6 @@ module.exports = function (io, socket) {
     socket.on('out-room', function(data){
       socket.leave(socket.room);
       socket.to(socket.room).emit('out-room', data);
-
     })
   
     socket.on('disconnect', function () {
