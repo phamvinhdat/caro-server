@@ -26,8 +26,8 @@ var exports_2 = {
 
 // these exports are for uploading to heroku
 var exports_3 = {
-    'client-domain': 'https://caro-1612234.herokuapp.com/',
-    'server-domain': 'https://caro-1612234-server.herokuapp.com/',
+    'client-domain': 'https://caro-1612234.herokuapp.com',
+    'server-domain': 'https://caro-1612234-server.herokuapp.com',
     'secret-key': 'chouser_hung_jwt_secretkey',
     'mail-key': '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',
     'database': {
